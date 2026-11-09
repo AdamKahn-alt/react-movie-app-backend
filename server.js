@@ -14,10 +14,8 @@ if (process.env.NODE_ENV === 'development') {
 connect(process.env.DATABASE_URL)
   .then(() => {
     console.log('Database connected successfully');
-    app.listen(process.env.PORT, 'localhost', () => {
-      console.log(
-        `Server is listening at http://localhost:${process.env.PORT}`,
-      );
+    app.listen(process.env.PORT, () => {
+      console.log(`Server is listening on port ${process.env.PORT}`);
     });
   })
   .catch((err) => {
