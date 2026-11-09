@@ -48,6 +48,10 @@ Update `.env` with the correct database URL and a real secret key.
 | `PORT` | Port used by the API | `3000` |
 | `NODE_ENV` | Runtime environment | `production` |
 | `SECRET_KEY` | Secret used to sign JWTs | A long random value |
+| `EMAIL_HOST` | SMTP host | `smtp-relay.brevo.com` |
+| `EMAIL_PORT` | SMTP port | `587` |
+| `EMAIL_USER` | Brevo SMTP login email | Your Brevo account email |
+| `EMAIL_PASSWORD` | Brevo SMTP key | Your Brevo SMTP key |
 
 Never commit `.env`. It contains local credentials and secrets. Use `.env.example`
 as the configuration template.
@@ -59,12 +63,10 @@ The email service is configured for MailDev on:
 - SMTP: `localhost:1025`
 - Web interface: `http://localhost:1080`
 
-Start MailDev in a separate terminal if email features are being tested:
-
-```bash
-npx maildev
-```
-
+is available at `http://localhost:1080`.
+When `NODE_ENV=development`, MailDev starts automatically with the API when you
+run `npm run dev`. Its SMTP server listens on port `1025`, and its web interface
+is available at `http://localhost:1080`.
 Signup can still create a user if the welcome email cannot be sent, but the API
 reports that the email failed. The password-reset flow requires MailDev to be
 available when sending the reset email.

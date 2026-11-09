@@ -1,5 +1,15 @@
 import app from "./app.js";
+import MailDev from 'maildev';
 import { connect } from "mongoose";
+
+if (process.env.NODE_ENV === 'development') {
+  const maildev = new MailDev({
+    smtp: 1025,
+    web: 1080,
+  });
+  maildev.start();
+  console.log('MailDev is running at http://localhost:1080');
+}
 
 connect(process.env.DATABASE_URL)
   .then(() => {
