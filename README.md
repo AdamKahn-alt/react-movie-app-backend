@@ -1,30 +1,31 @@
 # React Movie Backend
 
-Backend API for a private React movie application. It provides user registration,
-authentication, logout, account deletion, and password-reset functionality.
+Express/Mongoose backend for the React Movie application. The API provides user
+registration, cookie-based authentication, logout, account deletion, and
+password reset by email.
 
 ## Features
 
-- Express HTTP API
+- Express 5 HTTP API
 - MongoDB persistence through Mongoose
 - User signup and login
+- Authenticated current-user and profile endpoints
 - Password hashing with `bcryptjs`
-- JWT authentication stored in an HTTP-only cookie
+- JWT authentication in an HTTP-only `token` cookie
 - Per-user authorization for account deletion
 - Forgot-password and reset-password flows
-- Welcome and password-reset emails through a local MailDev SMTP server
+- Configurable SMTP email delivery through Nodemailer
+- Automatic MailDev startup in development
 - Health-check endpoint
 
 ## Requirements
 
 - Node.js 18 or newer
 - npm
-- A running MongoDB instance or MongoDB Atlas database
-- MailDev for local email testing
+- MongoDB or MongoDB Atlas
+- SMTP credentials for email in production
 
 ## Installation
-
-Clone the repository and install dependencies:
 
 ```bash
 git clone <repository-url>
@@ -32,71 +33,102 @@ cd react-movie-backend
 npm install
 ```
 
-Create a local environment file:
+Create a local environment file from the template:
 
 ```bash
-cp .env.example .env
+copy .env.example .env
 ```
 
-Update `.env` with the correct database URL and a real secret key.
+On macOS/Linux, use `cp .env.example .env` instead. Update `.env` before
+starting the server. Never commit `.env`; it contains credentials and secrets.
 
-## Environment variables
+## Configuration
 
-| Variable | Description | Example |
-| --- | --- | --- |
-| `DATABASE_URL` | MongoDB connection string | `mongodb://localhost:27017/react-movie` |
-| `PORT` | Port used by the API | `3000` |
-| `NODE_ENV` | Runtime environment | `production` |
-| `SECRET_KEY` | Secret used to sign JWTs | A long random value |
-| `EMAIL_HOST` | SMTP host | `smtp-relay.brevo.com` |
-| `EMAIL_PORT` | SMTP port | `2525` |
-| `EMAIL_USER` | Brevo SMTP login email | Your Brevo account email |
-| `EMAIL_PASSWORD` | Brevo SMTP key | Your Brevo SMTP key |
+The application loads variables from `.env`. The complete template is in
+[.env.example](.env.example).
 
-Never commit `.env`. It contains local credentials and secrets. Use `.env.example`
-as the configuration template.
+| Variable | Required | Description | Local example |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | Yes | MongoDB connection string | `mongodb://localhost:27017/react-movie` |
+| `PORT` | Yes | API listening port | `3000` |
+| `NODE_ENV` | Yes | Use `development` for automatic MailDev; use `production` for deployed SMTP | `development` |
+| `SECRET_KEY` | Yes | Long random key used to sign and verify JWTs | `replace-with-a-long-random-secret` |
+| `EMAIL_HOST` | Yes for email | SMTP host; defaults to `localhost` | `localhost` |
+| `EMAIL_PORT` | Yes for email | SMTP port; defaults to `1025` | `1025` |
+| `EMAIL_FROM` | Recommended | Sender address used by welcome and reset emails | `noreply@react-movie.com` |
+| `EMAIL_USER` | Production | SMTP username; omit for local MailDev | — |
+| `EMAIL_PASSWORD` | Production | SMTP password/key; omit for local MailDev | — |
+| `RESET_PASSWORD_LOCATION` | Yes for reset email | Frontend URL that receives `?token=...` | `http://localhost:5173/reset-password` |
 
-## MailDev
+For production SMTP, set `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_FROM`, `EMAIL_USER`,
+and `EMAIL_PASSWORD` to the values supplied by the provider. Port `465` uses
+TLS; other ports use the transport's non-implicit-TLS mode. The repository
+template includes a Brevo configuration example.
 
-The email service is configured for MailDev on:
+Generate a secret with:
 
-- SMTP: `localhost:1025`
-- Web interface: `http://localhost:1080`
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-When `NODE_ENV=development`, MailDev starts automatically with the API when you
-run `npm run dev`. Its SMTP server listens on port `1025`, and its web interface
-is available at `http://localhost:1080`.
-Signup can still create a user if the welcome email cannot be sent, but the API
-reports that the email failed. The password-reset flow requires MailDev to be
-available when sending the reset email.
+## Running
 
-## Running the server
-
-Start the development server:
+Development mode starts the API with Nodemon. When `NODE_ENV=development`, the
+server also starts MailDev automatically:
 
 ```bash
 npm run dev
 ```
 
-The API starts after a successful MongoDB connection. By default, it is available
-at:
+Production-style startup:
+
+```bash
+npm start
+```
+
+The `build` script runs `npm install`, which is suitable for deployment
+platforms that expect a build command. The API listens on the configured
+`PORT` after MongoDB connects. For the default configuration:
 
 ```text
 http://localhost:3000
 ```
 
-## API endpoints
+In development, MailDev is available at:
 
-The user API base URL is:
+- SMTP: `localhost:1025`
+- Web interface: `http://localhost:1080`
+
+MailDev is only started by `server.js` when `NODE_ENV=development`. Signup
+still creates the account if the welcome email cannot be sent, and reports
+`welcomeEmailSent: false`. A password-reset request fails if its email cannot
+be sent.
+
+## API
+
+All user endpoints use the base path:
 
 ```text
 /api/v1/users
 ```
 
+JSON endpoints return a `success` boolean and a descriptive `message`. User
+objects returned in `data.user` do not include the password or Mongoose
+internal version field.
+
 ### Health check
 
 ```http
 GET /health
+```
+
+Returns `200` with:
+
+```json
+{
+  "success": true,
+  "message": "Server is healthy"
+}
 ```
 
 ### Sign up
@@ -106,7 +138,7 @@ POST /api/v1/users/signup
 Content-Type: application/json
 ```
 
-Request body:
+Request:
 
 ```json
 {
@@ -116,7 +148,9 @@ Request body:
 }
 ```
 
-Passwords must contain at least eight characters.
+`username`, `email`, and `password` are required. Passwords must contain at
+least eight characters. Email is normalized to lowercase. Usernames and email
+addresses are unique.
 
 ### Log in
 
@@ -125,7 +159,7 @@ POST /api/v1/users/login
 Content-Type: application/json
 ```
 
-Request body:
+Request:
 
 ```json
 {
@@ -134,14 +168,50 @@ Request body:
 }
 ```
 
-Successful login sets a `token` cookie containing the JWT. Clients must preserve
-and send this cookie with authenticated requests.
+Email is normalized to lowercase. A successful login returns the public user
+and sets an HTTP-only `token` cookie. The JWT expires after 20 minutes; the
+cookie has a one-hour lifetime. The JWT is not returned in the JSON response.
 
 ### Log out
 
 ```http
 GET /api/v1/users/logout
 ```
+
+Clears the `token` cookie and returns `204 No Content`.
+
+### Get the current user
+
+```http
+GET /api/v1/users/me
+Cookie: token=<jwt>
+```
+
+Requires authentication and returns the signed-in user's `username` and
+`email`:
+
+```json
+{
+  "success": true,
+  "message": "User fetched successfully",
+  "data": {
+    "user": {
+      "username": "adam_khan",
+      "email": "adam@example.com"
+    }
+  }
+}
+```
+
+### Get the current user's profile
+
+```http
+GET /api/v1/users/fetch-profile
+Cookie: token=<jwt>
+```
+
+Requires authentication and returns the current user's public profile. The
+response excludes the password and Mongoose's internal `__v` field.
 
 ### Request a password reset
 
@@ -150,7 +220,7 @@ POST /api/v1/users/forgot-password
 Content-Type: application/json
 ```
 
-Request body:
+Request:
 
 ```json
 {
@@ -158,8 +228,9 @@ Request body:
 }
 ```
 
-When MailDev is running, the reset email can be viewed at
-`http://localhost:1080`.
+For an existing account, the API emails a reset link using
+`RESET_PASSWORD_LOCATION`. Reset links contain a JWT that expires after five
+minutes. The response uses the same message whether or not the email exists.
 
 ### Reset a password
 
@@ -168,7 +239,7 @@ POST /api/v1/users/reset-password
 Content-Type: application/json
 ```
 
-Request body:
+Request:
 
 ```json
 {
@@ -177,22 +248,38 @@ Request body:
 }
 ```
 
-Reset tokens expire after five minutes.
+Both fields are required and the new password must contain at least eight
+characters. Invalid or expired tokens return `401`.
 
 ### Delete a user
 
 ```http
 DELETE /api/v1/users/delete/:id
+Cookie: token=<jwt>
 ```
 
-This endpoint requires the login cookie. The authenticated user can delete only
-the account whose ID is in the URL.
+The request must be authenticated. The authenticated user may delete only the
+account whose MongoDB ID is in the URL; otherwise the API returns `403`.
 
 Example:
 
 ```text
 DELETE /api/v1/users/delete/6ad9f7a13a176001d210a179
 ```
+
+## Frontend integration
+
+- Send credentials on cross-origin requests so the authentication cookie is
+  included. For `fetch`, use `credentials: "include"`.
+- CORS allows `http://localhost:5173` and `http://127.0.0.1:5173`, with
+  credentials enabled.
+- The frontend must use the same cookie-aware client for authenticated requests.
+- The frontend should not expect the JWT in the JSON response.
+- Use `GET /api/v1/users/me` to load the signed-in user's basic identity.
+- Use `GET /api/v1/users/fetch-profile` to load the signed-in user's public
+  profile.
+- Configure `RESET_PASSWORD_LOCATION` to the frontend route that reads the
+  reset token from the query string.
 
 ## Project structure
 
@@ -201,39 +288,31 @@ DELETE /api/v1/users/delete/6ad9f7a13a176001d210a179
 ├── app.js
 ├── server.js
 ├── package.json
-├── src
-│   ├── controllers
-│   │   └── userController.js
-│   ├── middlewares
-│   │   ├── authenticate.js
-│   │   ├── authorize.js
-│   │   └── jwt.js
-│   ├── models
-│   │   └── userModel.js
-│   ├── routes
-│   │   └── userRoute.js
-│   └── services
-│       ├── emailService.js
-│       ├── passwordResetService.js
-│       └── publicUser.js
-└── .env.example
+├── .env.example
+└── src
+    ├── controllers
+    │   └── userController.js
+    ├── middlewares
+    │   ├── authenticate.js
+    │   ├── authorize.js
+    │   └── jwt.js
+    ├── models
+    │   └── userModel.js
+    ├── routes
+    │   └── userRoute.js
+    └── services
+        ├── emailService.js
+        ├── passwordResetService.js
+        └── publicUser.js
 ```
-
-## Notes for frontend integration
-
-- The frontend must send credentials when making cross-origin requests so the
-  authentication cookie is included.
-- The backend currently allows origins `http://localhost:5173` and
-  `http://127.0.0.1:5173`.
-- The frontend should not expect the JWT in the JSON response; authentication is
-  handled through the `token` cookie.
 
 ## Testing
 
-The project does not currently contain an automated test suite. You can test the
-endpoints with Bruno, Postman, or the frontend application.
+There is currently no automated test suite (`npm test` is a placeholder that
+exits with an error). Exercise the API with the frontend, Bruno, Postman, or
+another HTTP client after starting MongoDB and configuring email delivery.
 
 ## License
 
-This project is currently private and does not define a public open-source
+This project is private and does not currently define a public open-source
 license.
