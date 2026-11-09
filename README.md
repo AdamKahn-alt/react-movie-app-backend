@@ -49,7 +49,7 @@ Update `.env` with the correct database URL and a real secret key.
 | `NODE_ENV` | Runtime environment | `production` |
 | `SECRET_KEY` | Secret used to sign JWTs | A long random value |
 | `EMAIL_HOST` | SMTP host | `smtp-relay.brevo.com` |
-| `EMAIL_PORT` | SMTP port | `587` |
+| `EMAIL_PORT` | SMTP port | `2525` |
 | `EMAIL_USER` | Brevo SMTP login email | Your Brevo account email |
 | `EMAIL_PASSWORD` | Brevo SMTP key | Your Brevo SMTP key |
 
@@ -63,7 +63,6 @@ The email service is configured for MailDev on:
 - SMTP: `localhost:1025`
 - Web interface: `http://localhost:1080`
 
-is available at `http://localhost:1080`.
 When `NODE_ENV=development`, MailDev starts automatically with the API when you
 run `npm run dev`. Its SMTP server listens on port `1025`, and its web interface
 is available at `http://localhost:1080`.
