@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   createUser,
   deleteUserById,
+  fetchMe,
+  fetchProfile,
   forgotPassword,
   loginUser,
   logout,
@@ -17,6 +19,8 @@ router.post("/login", loginUser);
 router.get("/logout", logout);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.get("/me", authenticate, fetchMe);
+router.get("/fetch-profile", authenticate, fetchProfile);
 
 router.delete("/delete/:id", authenticate, authorizeEachUser, deleteUserById);
 

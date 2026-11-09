@@ -211,3 +211,57 @@ export const resetPassword = async (req, res) => {
     });
   }
 };
+
+export const fetchMe = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User fetched successfully",
+      data: {
+        user: {
+          username: user.username,
+          email: user.email,
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: `failed due to error: ${error}`,
+    });
+  }
+};
+
+export const fetchProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: `User profile fetched successfully`,
+      data: {
+        user: publicUser(user),
+      },
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: `failed due to error: ${error}`,
+    });
+  }
+};
