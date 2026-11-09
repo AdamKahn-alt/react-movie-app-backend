@@ -1,15 +1,26 @@
-import nodemailer from "nodemailer";
+import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
+
+dotenv.config({ path: './.env' });
 
 const transporter = nodemailer.createTransport({
-  host: "localhost",
-  port: 1025,
-  secure: false,
+  host: process.env.EMAIL_HOST || 'localhost',
+  port: Number(process.env.EMAIL_PORT || 1025),
+  secure: Number(process.env.EMAIL_PORT) === 465,
+  ...(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD
+    ? {
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      }
+    : {}),
 });
 
 export const buildWelcomeEmail = ({ userName, userEmail }) => ({
-  from: "noreply@react-movie.com",
+  from: process.env.EMAIL_FROM || '"noreply@react-movie.com"',
   to: userEmail,
-  subject: "Welcome Email",
+  subject: 'Welcome Email',
   html: `
     <h1 style="color: #333;">Welcome to React Movie, ${userName}!</h1>
     <p style="font-size: 16px;">Thank you for signing up for our movie platform. We're excited to have you on board!</p>
@@ -42,14 +53,14 @@ export const sendWelcomeEmail = async (user) => {
 };
 
 export const buildPasswordResetEmail = ({ userName, email, resetToken }) => ({
-  from: "NOVACART <no-reply@novacart.com>",
+  from: process.env.EMAIL_FROM || 'noreply@react-movie.com',
   to: email,
-  subject: "Password Reset Request",
+  subject: 'Password Reset Request',
   html: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
   <h2>Password Reset Request</h2>
   <p>Hi ${userName},</p>
   <p>You have requested to reset your password. Please click the link below to reset your password:</p>
-  <p><a style="text-decoration: none; color: #007bff;" href="http://127.0.0.1:5500/resetpassword.html?token=${resetToken}" target="_blank">Reset Password</a></p>
+  <p><a style="text-decoration: none; color: #007bff;" href="${process.env.RESET_PASSWORD_LOCATION}?token=${resetToken}" target="_blank">Reset Password</a></p>
   <p>This link will expire in 5 minutes.</p>
   <p>If you did not request a password reset, please ignore this email.</p>
   </div>`,
@@ -76,7 +87,7 @@ export const sendPasswordResetEmail = async ({
     // console.log(`Password reset email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error("Failed to send password reset email: ", error.message);
+    console.error('Failed to send password reset email: ', error.message);
     return false;
   }
 };
