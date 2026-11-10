@@ -14,6 +14,7 @@ password reset by email.
 - JWT authentication in an HTTP-only `token` cookie
 - Per-user authorization for account deletion
 - Forgot-password and reset-password flows
+- Per-user movie and series watchlists
 - Configurable SMTP email delivery through Nodemailer
 - Automatic MailDev startup in development
 - Health-check endpoint
@@ -267,12 +268,71 @@ Example:
 DELETE /api/v1/users/delete/6ad9f7a13a176001d210a179
 ```
 
+### Add media to a watchlist
+
+```http
+POST /api/v1/users/add-to-watchlist
+Content-Type: application/json
+Cookie: token=<jwt>
+```
+
+Request:
+
+```json
+{
+  "tmdbId": "603",
+  "title": "The Matrix",
+  "posterPath": "/path-to-poster.jpg",
+  "rating": 8.7,
+  "overview": "A computer hacker learns the truth about reality.",
+  "mediaType": "movie"
+}
+```
+
+This endpoint requires authentication. `mediaType` must be either `movie` or
+`series`, and `rating` must be a number from `0` to `10`. The same user cannot
+save the same `tmdbId` more than once, but different users can save the same
+media. A duplicate for the current user returns `409 Conflict`.
+
+### View the current user's watchlist
+
+```http
+GET /api/v1/users/view-watchlists
+Cookie: token=<jwt>
+```
+
+Returns only the watchlist media belonging to the authenticated user. An empty
+watchlist returns `200` with an empty list.
+
+### Remove media from a watchlist
+
+```http
+DELETE /api/v1/users/delete-watchlist/:tmdbId
+Cookie: token=<jwt>
+```
+
+Deletes the matching media only from the authenticated user's watchlist.
+
+## Watchlist database behavior
+
+Watchlist documents store the authenticated user's MongoDB `_id` in the
+`user` field. The `user` field is a Mongoose `ObjectId` reference to the `user`
+model.
+
+The watchlist schema defines a unique compound MongoDB index on `{ user,
+tmdbId }`. This is a database-level constraint that prevents duplicate media
+for one user while allowing the same media in multiple users' watchlists. On
+startup, `server.js` runs `WatchList.syncIndexes()` after connecting to
+MongoDB. This synchronizes the collection's indexes with the schema and removes
+obsolete indexes left by older versions of the watchlist schema.
+
 ## Frontend integration
 
 - Send credentials on cross-origin requests so the authentication cookie is
   included. For `fetch`, use `credentials: "include"`.
-- CORS allows `http://localhost:5173` and `http://127.0.0.1:5173`, with
-  credentials enabled.
+- CORS allows `http://localhost:5173`, `http://127.0.0.1:5173`,
+  `http://localhost:5174`, `http://localhost:5175`, `http://localhost:5500`,
+  and `127.0.0.1:5500`, with credentials enabled.
 - The frontend must use the same cookie-aware client for authenticated requests.
 - The frontend should not expect the JWT in the JSON response.
 - Use `GET /api/v1/users/me` to load the signed-in user's basic identity.
@@ -297,7 +357,8 @@ DELETE /api/v1/users/delete/6ad9f7a13a176001d210a179
     │   ├── authorize.js
     │   └── jwt.js
     ├── models
-    │   └── userModel.js
+    │   ├── userModel.js
+    │   └── watchListModel.js
     ├── routes
     │   └── userRoute.js
     └── services
