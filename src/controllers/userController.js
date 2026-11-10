@@ -7,6 +7,7 @@ import {
   forgotPasswordService,
   resetUserPasswordService,
 } from "../services/passwordResetService.js";
+import WatchList from "../models/watchListModel.js";
 
 export const createUser = async (req, res) => {
   const { username, email, password } = req.body;
@@ -59,7 +60,15 @@ export const createUser = async (req, res) => {
     });
   } catch (error) {
     console.error(`failed due to error: ${error}`);
-    return res.status(500).json({
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Duplicate credentials",
+        errorMessage: error.message,
+      });
+    }
+    return res.status(error.statusCode || 500).json({
       success: false,
       message: error.message,
     });
@@ -262,6 +271,134 @@ export const fetchProfile = async (req, res) => {
     return res.status(error.statusCode || 500).json({
       success: false,
       message: `failed due to error: ${error}`,
+    });
+  }
+};
+
+export const createWatchList = async (req, res) => {
+  const { tmdbId, title, posterPath, rating, overview, mediaType } = req.body;
+  const userId = req.user?.id;
+  // console.log(req.user);
+
+  // to confirm whether all required details are defined (except overview)
+  if (
+    !tmdbId ||
+    !title ||
+    !posterPath ||
+    !mediaType ||
+    typeof rating !== "number" ||
+    rating < 0 ||
+    rating > 10
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid watchlist data",
+    });
+  }
+
+  try {
+    const watchListMedia = await WatchList.create({
+      user: userId,
+      tmdbId,
+      posterPath,
+      title,
+      rating,
+      mediaType,
+      overview,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Watchlist media saved successfully",
+      data: {
+        watchListMedia: watchListMedia,
+      },
+    });
+  } catch (error) {
+    const duplicateKey = error.code === 11000 ? error.keyPattern || {} : {};
+    if (duplicateKey.user && duplicateKey.tmdbId) {
+      return res.status(409).json({
+        success: false,
+        message: "This media is already in your watchlist",
+      });
+    }
+
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const viewAllWatchList = async (req, res) => {
+  const userId = req.user?.id;
+  try {
+    const watchlists = await WatchList.find({ user: userId });
+    if (watchlists.length < 1) {
+      return res.status(200).json({
+        success: true,
+        message: "No media saved to watchlist",
+        data: {
+          watchlists: [],
+        },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "All watch list media fetched successfully",
+      data: {
+        watchlistDatabase: watchlists,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteWatchListMedia = async (req, res) => {
+  const userId = req.user?.id;
+  const { tmdbId } = req.params;
+  // const { tmbdId, title, posterPath, rating, overview, mediaType } = req.body;
+
+  if (!tmdbId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "TMDB ID is required" });
+  }
+
+  try {
+    const deletedMedia = await WatchList.findOneAndDelete({
+      user: userId,
+      tmdbId,
+    });
+    if (!deletedMedia) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Media not found in your watchlist" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "watchlist media deleted successfully",
+      data: {
+        media: deletedMedia,
+      },
+    });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
