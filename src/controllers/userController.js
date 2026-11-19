@@ -108,7 +108,7 @@ export const loginUser = async (req, res) => {
     };
 
     const token = await signToken(payload, {
-      expiresIn: "20m",
+      expiresIn: '1m',
     });
 
     res.cookie("token", token, {
