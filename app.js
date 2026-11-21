@@ -21,6 +21,9 @@ const allowedOrigins = [
   "http://localhost:5500",
   "http://localhost:5174",
   "http://localhost:5175",
+  "https://reelix.vercel.app",
+  "https://reelix.netlify.app",
+  "https://florintechdevs.com",
 ];
 
 app.use(cors({ origin: allowedOrigins, credentials: true }));

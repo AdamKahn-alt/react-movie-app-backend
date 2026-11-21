@@ -108,13 +108,13 @@ export const loginUser = async (req, res) => {
     };
 
     const token = await signToken(payload, {
-      expiresIn: "20m",
+      expiresIn: '20m',
     });
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 3600000, // 1 hour,
       path: "/",
     });
@@ -170,7 +170,7 @@ export const logout = (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 3600000, // 1 hour,
     path: "/",
   });

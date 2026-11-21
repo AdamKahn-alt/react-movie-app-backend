@@ -48,18 +48,18 @@ starting the server. Never commit `.env`; it contains credentials and secrets.
 The application loads variables from `.env`. The complete template is in
 [.env.example](.env.example).
 
-| Variable | Required | Description | Local example |
-| --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | MongoDB connection string | `mongodb://localhost:27017/react-movie` |
-| `PORT` | Yes | API listening port | `3000` |
-| `NODE_ENV` | Yes | Use `development` for automatic MailDev; use `production` for deployed SMTP | `development` |
-| `SECRET_KEY` | Yes | Long random key used to sign and verify JWTs | `replace-with-a-long-random-secret` |
-| `EMAIL_HOST` | Yes for email | SMTP host; defaults to `localhost` | `localhost` |
-| `EMAIL_PORT` | Yes for email | SMTP port; defaults to `1025` | `1025` |
-| `EMAIL_FROM` | Recommended | Sender address used by welcome and reset emails | `noreply@react-movie.com` |
-| `EMAIL_USER` | Production | SMTP username; omit for local MailDev | — |
-| `EMAIL_PASSWORD` | Production | SMTP password/key; omit for local MailDev | — |
-| `RESET_PASSWORD_LOCATION` | Yes for reset email | Frontend URL that receives `?token=...` | `http://localhost:5173/reset-password` |
+| Variable                  | Required            | Description                                                                 | Local example                          |
+| ------------------------- | ------------------- | --------------------------------------------------------------------------- | -------------------------------------- |
+| `DATABASE_URL`            | Yes                 | MongoDB connection string                                                   | `mongodb://localhost:27017/react-movie` |
+| `PORT`                    | Yes                 | API listening port                                                          | `3000`                                 |
+| `NODE_ENV`                | Yes                 | Use `development` for automatic MailDev; use `production` for deployed SMTP | `development`                          |
+| `SECRET_KEY`              | Yes                 | Long random key used to sign and verify JWTs                                | `replace-with-a-long-random-secret`    |
+| `EMAIL_HOST`              | Yes for email       | SMTP host; defaults to `localhost`                                          | `localhost`                            |
+| `EMAIL_PORT`              | Yes for email       | SMTP port; defaults to `1025`                                               | `1025`                                 |
+| `EMAIL_FROM`              | Recommended         | Sender address used by welcome and reset emails                             | `noreply@react-movie.com`              |
+| `EMAIL_USER`              | Production          | SMTP username; omit for local MailDev                                       | —                                      |
+| `EMAIL_PASSWORD`          | Production          | SMTP password/key; omit for local MailDev                                   | —                                      |
+| `RESET_PASSWORD_LOCATION` | Yes for reset email | Frontend URL that receives `?token=...`                                     | `http://localhost:5173/reset-password` |
 
 For production SMTP, set `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_FROM`, `EMAIL_USER`,
 and `EMAIL_PASSWORD` to the values supplied by the provider. Port `465` uses
@@ -180,6 +180,8 @@ GET /api/v1/users/logout
 ```
 
 Clears the `token` cookie and returns `204 No Content`.
+In production, cookie clearing uses `Secure` and `SameSite=None`; in development
+it uses `SameSite=Lax`.
 
 ### Get the current user
 
@@ -332,7 +334,9 @@ obsolete indexes left by older versions of the watchlist schema.
   included. For `fetch`, use `credentials: "include"`.
 - CORS allows `http://localhost:5173`, `http://127.0.0.1:5173`,
   `http://localhost:5174`, `http://localhost:5175`, `http://localhost:5500`,
-  and `127.0.0.1:5500`, with credentials enabled.
+  `127.0.0.1:5500`, `https://reelix.vercel.app`,
+  `https://reelix.netlify.app`, and `https://florintechdevs.com`, with
+  credentials enabled.
 - The frontend must use the same cookie-aware client for authenticated requests.
 - The frontend should not expect the JWT in the JSON response.
 - Use `GET /api/v1/users/me` to load the signed-in user's basic identity.
