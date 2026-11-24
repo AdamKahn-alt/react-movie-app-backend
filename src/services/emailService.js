@@ -1,10 +1,10 @@
-import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
+import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
-dotenv.config({ path: './.env' });
+dotenv.config({ path: "./.env" });
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'localhost',
+  host: process.env.EMAIL_HOST || "localhost",
   port: Number(process.env.EMAIL_PORT || 1025),
   secure: Number(process.env.EMAIL_PORT) === 465,
   ...(process.env.EMAIL_USER && process.env.EMAIL_PASSWORD
@@ -18,16 +18,16 @@ const transporter = nodemailer.createTransport({
 });
 
 export const buildWelcomeEmail = ({ userName, userEmail }) => ({
-  from: process.env.EMAIL_FROM || '"noreply@react-movie.com"',
+  from: process.env.EMAIL_FROM || '"noreply@support.reelix.com"',
   to: userEmail,
-  subject: 'Welcome Email',
+  subject: "Welcome Email",
   html: `
-    <h1 style="color: #333;">Welcome to React Movie, ${userName}!</h1>
+    <h1 style="color: #333; margin-bottom: 7px;">Welcome to Reelix, ${userName}!</h1>
     <p style="font-size: 16px;">Thank you for signing up for our movie platform. We're excited to have you on board!</p>
     <p style="font-size: 16px;">Explore our vast collection of movies, create your watchlist, and enjoy a seamless movie-watching experience.</p>
-    <p style="font-size: 16px;">If you have any questions or need assistance, feel free to reach out to our support team.</p>
+    <p style="font-size: 16px;">If you have any questions or need assistance, feel free to reach out to <a href="mailto:adamsonobodozie@gmail.com" style="text-decoration: none;">our support team </a>.</p>
     <p style="font-size: 16px;">Happy watching!</p>
-    <p style="font-size: 16px;">Best regards,<br>The React Movie Team</p>
+    <p style="font-size: 16px;">Best regards,<br>The Reelix Team</p>
     `,
 });
 
@@ -44,7 +44,6 @@ export const sendWelcomeEmail = async (user) => {
       subject: mail.subject,
       html: mail.html,
     });
-    // console.log(`Welcome email sent to ${user.email}`);
     return true;
   } catch (error) {
     console.error(`Failed to send welcome email: ${error.message}`);
@@ -53,9 +52,9 @@ export const sendWelcomeEmail = async (user) => {
 };
 
 export const buildPasswordResetEmail = ({ userName, email, resetToken }) => ({
-  from: process.env.EMAIL_FROM || 'noreply@react-movie.com',
+  from: process.env.EMAIL_FROM || "noreply@support.reelix.com",
   to: email,
-  subject: 'Password Reset Request',
+  subject: "Password Reset Request",
   html: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #222;">
   <h2>Password Reset Request</h2>
   <p>Hi ${userName},</p>
@@ -87,7 +86,7 @@ export const sendPasswordResetEmail = async ({
     // console.log(`Password reset email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error('Failed to send password reset email: ', error.message);
+    console.error("Failed to send password reset email: ", error.message);
     return false;
   }
 };
