@@ -142,15 +142,15 @@ export const buildPasswordResetEmail = ({ userName, email, resetToken }) => ({
       </p>
 
       <!-- Fallback Plain Link (Good practice in case button is blocked) -->
-      <p style="font-size: 12px; line-height: 1.5; color: #64748b; border-top: 1px solid #23293a; padding-top: 16px; margin: 16px 0 0 0; word-break: break-all;">
-        Button not working? Copy and paste this link into your browser:<br>
+      <p style="font-size: 13px; line-height: 1.5; color: #64748b; border-top: 1px solid #23293a; padding-top: 16px; margin: 16px 0 0 0; word-break: break-all;">
+        If the button above doesn't work, copy and paste this link into your browser:<br>
         <a href="${process.env.RESET_PASSWORD_LOCATION}?token=${resetToken}" style="color: #00e0ff; text-decoration: none;">${process.env.RESET_PASSWORD_LOCATION}?token=${resetToken}</a>
       </p>
     </div>
 
     <!-- Footer -->
     <div style="background-color: #0f121b; padding: 18px 28px; text-align: center; border-top: 1px solid #23293a;">
-      <p style="margin: 0; font-size: 12px; color: #64748b;">
+      <p style="margin: 0; font-size: 13px; color: #64748b;">
         © ${new Date().getFullYear()} Reelix • Sent securely via adam.florintechdevs.com
       </p>
     </div>
