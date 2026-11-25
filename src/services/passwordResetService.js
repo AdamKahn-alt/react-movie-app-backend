@@ -10,6 +10,12 @@ export const forgotPasswordService = async (email) => {
       error.statusCode = 400;
       throw error;
     }
+
+    if (typeof email !== "string") {
+      const error = new Error("A valid email string is required");
+      error.statusCode = 400;
+      throw error;
+    }
     const normalizedEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: normalizedEmail });
 
@@ -50,6 +56,14 @@ export const forgotPasswordService = async (email) => {
 export const resetUserPasswordService = async (newPassword, token) => {
   if (!newPassword || !token) {
     const error = new Error("Password and token are required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (typeof newPassword !== "string" || typeof token !== "string") {
+    const error = new Error(
+      "A valid string of password and token are required",
+    );
     error.statusCode = 400;
     throw error;
   }
